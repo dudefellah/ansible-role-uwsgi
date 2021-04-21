@@ -1,0 +1,19 @@
+[Unit]
+Description={{ uwsgi_service_description }}uWSGI 
+After=network.target
+
+[Service]
+User={{ uwsgi_owner }}
+Group={{ uwsgi_group }}
+WorkingDirectory={{ uwsgi_working_directory }}
+{% for env in uwsgi_environment %}
+Environment="{{ env.name }}={{ env.value }}"
+{% endfor %}
+ExecStart={%- if uwsgi_pip_virtualenv -%}{{ uwsgi_pip_virtualenv }}/bin/uwsgi{%- else -%}{{ _uwsgi_bin_path }}{%- endif %} --ini {{ _uwsgi_emperor_config_path }}
+ExecStop=/bin/kill -INT $(cat {{ uwsgi_emperor_pidfile_path }})
+{% if uwsgi_service_runtime_directory is not none %}
+RuntimeDirectory={{ uwsgi_service_runtime_directory }}
+{%- endif %}
+
+[Install]
+WantedBy=multi-user.target

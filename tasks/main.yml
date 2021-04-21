@@ -1,0 +1,139 @@
+---
+# tasks file for ansible-role-uwsgi
+- name: Gather some useful facts to prepare the role
+  include_tasks: gather_role_facts.yml
+
+- name: Install uwsgi (package)
+  package:
+    name: "{{ _uwsgi_packages }}"
+    state: present
+  tags:
+    - package
+    - install
+  when:
+    - "uwsgi_install_method == 'package'"
+
+# Somewhat hacky: can't figure out how to have Ansible understand that an empty/
+# null value is "unset" (even with omit) for executable and virtualenv so that
+# it doesn't complain about exclusivity. To get around it, there's one task for
+# when executable is set and virtualenv* isn't set, and one for when virtualenv
+# is set, or executable is unset (making it the 'default')
+- name: Install uwsgi (pip requirements)
+  pip:
+    name: "{{ uwsgi_pip_packages | default(omit) }}"
+    executable: "{{ uwsgi_pip_executable }}"
+    extra_args: "{{ uwsgi_pip_extra_args | default(omit) }}"
+  tags:
+    - pip
+    - install
+  when:
+    - "uwsgi_install_method == 'pip'"
+    - "uwsgi_pip_executable is not none"
+    - "uwsgi_pip_virtualenv is none"
+
+- name: Install uwsgi (pip virtualenv)
+  pip:
+    name: "{{ uwsgi_pip_packages | default(omit) }}"
+    virtualenv: "{{ uwsgi_pip_virtualenv | default(omit) }}"
+    virtualenv_command: "{{ uwsgi_pip_virtualenv_command | default(omit) }}"
+    virtualenv_site_packages: >-
+      {{ uwsgi_pip_virtualenv_site_packages | default(omit) }}
+    extra_args: "{{ uwsgi_pip_extra_args | default(omit) }}"
+  tags:
+    - pip
+    - install
+  when:
+    - "uwsgi_install_method == 'pip'"
+    - >-
+      (uwsgi_pip_executable is none) or
+      (uwsgi_pip_virtualenv is not none)
+
+- name: Look for an emperor config path
+  stat:
+    path: "{{ _uwsgi_emperor_config_path | dirname }}"
+  changed_when: false
+  register: _emperor_config_path_st
+
+- name: Create the emperor config path, but don't change it if it already exists
+  file:
+    path: "{{ _uwsgi_emperor_config_path | dirname }}"
+    state: directory
+    owner: "{{ uwsgi_owner }}"
+    group: "{{ uwsgi_group }}"
+    mode: "0750"
+  when:
+    - "not _emperor_config_path_st.stat.exists"
+
+- name: Look up pidfile path
+  stat:
+    path: "{{ uwsgi_emperor_pidfile_path | dirname }}"
+  register: pidfile_path_st
+
+- name: Create the pidile path if it dosn't already exist
+  file:
+    path: "{{ uwsgi_emperor_pidfile_path | dirname }}"
+    state: directory
+    owner: "{{ uwsgi_owner }}"
+    group: "{{ uwsgi_group }}"
+    mode: "0750"
+  when:
+    - "not pidfile_path_st.stat.exists"
+
+- name: Install uwsgi emperor conf
+  template:
+    src: uwsgi.ini.j2
+    dest: "{{ _uwsgi_emperor_config_path }}"
+    owner: "{{ uwsgi_owner }}"
+    group: "{{ uwsgi_group }}"
+    mode: "0640"
+  notify:
+    - reload uwsgi
+  vars:
+    uwsgi_config: >-
+      {{- _uwsgi_emperor_config['uwsgi'].update({"pidfile": uwsgi_emperor_pidfile_path}) -}}
+      {{- _uwsgi_emperor_config -}}
+
+- name: Install and configure vassal details
+  include_tasks: install_vassal.yml
+  vars:
+    path: "{{ _uwsgi_vassal_path }}/{{ vassal.path }}"
+    config: "{{ vassal.content }}"
+    owner: "{{ vassal.owner | default(uwsgi_owner) }}"
+    group: "{{ vassal.group | default(uwsgi_group) }}"
+  loop: "{{ uwsgi_vassal_configs }}"
+  loop_control:
+    loop_var: vassal
+
+- block:
+    - name: Install systemd service
+      template:
+        src: uwsgi.service.j2
+        dest: "{{ uwsgi_emperor_systemd_service_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+      vars:
+        uwsgi_service_description: uWSGI Emperor Service
+        uwsgi_working_directory: /tmp
+        uwsgi_environment:
+          - name: PATH
+            value: "$PATH:{{ uwsgi_pip_virtualenv | default('') }}/bin"
+      notify:
+        - systemctl daemon-reload
+      when:
+        - "ansible_service_mgr == 'systemd'"
+        - "uwsgi_emperor_systemd_service_path is not none"
+        - "uwsgi_service_name is not none"
+
+    - name: Ensure systemctl daemon reload has happened before we set the service state
+      meta: flush_handlers
+
+- name: Set service state
+  service:
+    name: "{{ uwsgi_service_name }}"
+    state: "{{ uwsgi_service_state }}"
+    enabled: "{{ uwsgi_service_enabled }}"
+  register: set_state
+  when:
+    - "uwsgi_service_name is not none"
+    - "uwsgi_service_state is not none"

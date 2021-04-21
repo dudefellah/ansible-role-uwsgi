@@ -1,0 +1,31 @@
+---
+- name: Prepare
+  hosts: all
+  tasks:
+    - name: Create uwsgi group
+      group:
+        name: uwsgi
+
+    - name: Create uwsgi user
+      user:
+        name: uwsgi
+        group: uwsgi
+
+    - name: Install python3
+      package:
+        name:
+          - python3
+          - python3-setuptools
+          - gcc
+        update_cache: true
+        state: present
+
+    - name: Install some stretch dependencies
+      package:
+        name:
+          - python3-virtualenv
+        update_cache: true
+        state: present
+      when:
+        - "ansible_distribution == 'Debian'"
+        - "ansible_distribution_major_version|int == 9"

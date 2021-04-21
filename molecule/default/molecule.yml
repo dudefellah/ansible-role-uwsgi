@@ -1,0 +1,49 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+platforms:
+  - name: uwsgi-centos7
+    image: "geerlingguy/docker-centos7-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
+  - name: uwsgi-centos8
+    image: "geerlingguy/docker-centos8-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
+  - name: uwsgi-debian9
+    image: "geerlingguy/docker-debian9-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: ../resources/playbooks/prepare.yml
+  inventory:
+    host_vars:
+      uwsgi-centos7:
+        uwsgi_service_runtime_directory: null
+        uwsgi_emperor_pidfile_path: /var/run/uwsgi/uwsgi-emperor.pid
+      uwsgi-centos8:
+        uwsgi_install_method: pip
+        # I don't understand why I need to specify this, but without it
+        # it's looking at b'bin/pip3' as the pip3 path
+        uwsgi_pip_executable: /usr/bin/pip3
+        uwsgi_service_state: null
+      uwsgi-debian9:
+        uwsgi_install_method: pip
+        uwsgi_pip_executable: /usr/bin/pip
+        uwsgi_service_state: null
+verifier:
+  name: testinfra

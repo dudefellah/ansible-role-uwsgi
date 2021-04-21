@@ -1,0 +1,47 @@
+---
+# vars file for ansible-role-uwsgi
+__uwsgi_packages_centos:
+  - uwsgi
+
+__uwsgi_packages_debian:
+  - uwsgi
+
+__uwsgi_vassal_path_centos: /etc/uwsgi.d
+
+__uwsgi_vassal_path_debian: /etc/uwsgi/apps-enabled
+
+__uwsgi_emperor_config_path_centos: /etc/uwsgi.ini
+
+__uwsgi_emperor_config_path_debian: /etc/uwsgi.ini
+
+__uwsgi_emperor_config_centos:
+  uwsgi:
+    autoload: true
+    master: true
+    workers: 2
+    no-orphans: true
+    log-date: true
+    uid: root
+    gid: root
+    emperor: "{{ _uwsgi_vassal_path }}"
+
+__uwsgi_emperor_config_debian:
+  uwsgi:
+    autoload: true
+    master: true
+    workers: 2
+    no-orphans: true
+    log-date: true
+    uid: root
+    gid: root
+    emperor: "{{ _uwsgi_vassal_path }}"
+
+__uwsgi_bin_path_centos: /usr/sbin/uwsgi
+
+# Making a bit of an assumption here, but the only supported Debian platform
+# can't install uwsgi from packages, so it's most likely to end up in
+# /usr/local/bin. This is a little inconsistent since it's more pip dependent
+# than Debian-package dependent, but it's convenient, so here we go.
+__uwsgi_bin_path_centos8: /usr/local/bin/uwsgi
+
+__uwsgi_bin_path_debian: /usr/local/bin/uwsgi

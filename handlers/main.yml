@@ -1,0 +1,12 @@
+---
+# handlers file for ansible-role-uwsgi
+- name: Systemctl daemon-reload
+  systemd:
+    daemon_reload: true
+  listen: systemctl daemon-reload
+
+- name: Reload service
+  systemd:
+    service: "{{ uwsgi_service_name }}"
+    state: "{{ uwsgi_service_reload_state }}"
+  listen: reload uwsgi

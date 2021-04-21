@@ -1,0 +1,187 @@
+---
+- name: Set the list of packages to install
+  set_fact:
+    _uwsgi_packages: >-
+      {%- if uwsgi_packages is not none -%}
+      {{ uwsgi_packages }}
+      {%- elif (
+            lookup(
+              'vars',
+              (
+                '__uwsgi_packages_' +
+                ansible_distribution|lower|string +
+                ansible_distribution_major_version|lower|string
+              ),
+              default=[]
+            ) | length
+          ) > 0 -%}
+      {{- lookup(
+            'vars',
+            (
+              '__uwsgi_packages_' +
+              ansible_distribution|lower|string +
+              ansible_distribution_major_version|lower|string
+            ),
+            default=[]
+          ) -}}
+      {%- else -%}
+        {{- lookup(
+              'vars',
+              (
+                '__uwsgi_packages_' +
+                ansible_distribution|lower|string
+              ),
+              default=[]
+            ) -}}
+      {%- endif -%}
+
+- name: Determine the approrpriate vassal path
+  set_fact:
+    _uwsgi_vassal_path: >-
+      {%- if uwsgi_vassal_path is not none -%}
+      {{ uwsgi_vassal_path }}
+      {%- elif (
+            lookup(
+              'vars',
+              (
+                '__uwsgi_vassal_path_' +
+                ansible_distribution|lower|string +
+                ansible_distribution_major_version|lower|string
+              ),
+              default=[]
+            ) | length
+          ) > 0 -%}
+      {{- lookup(
+            'vars',
+            (
+              '__uwsgi_vassal_path_' +
+              ansible_distribution|lower|string +
+              ansible_distribution_major_version|lower|string
+            ),
+            default=[]
+          ) -}}
+      {%- else -%}
+        {{- lookup(
+              'vars',
+              (
+                '__uwsgi_vassal_path_' +
+                ansible_distribution|lower|string
+              ),
+              default=[]
+            ) -}}
+      {%- endif -%}
+
+- name: Determine the approrpriate default emperor config path
+  set_fact:
+    _uwsgi_emperor_config_path: >-
+      {%- if uwsgi_emperor_config_path is not none -%}
+      {{ uwsgi_emperor_config_path }}
+      {%- elif (
+            lookup(
+              'vars',
+              (
+                '__uwsgi_emperor_config_path_' +
+                ansible_distribution|lower|string +
+                ansible_distribution_major_version|lower|string
+              ),
+              default=[]
+            ) | length
+          ) > 0 -%}
+      {{- lookup(
+            'vars',
+            (
+              '__uwsgi_emperor_config_path_' +
+              ansible_distribution|lower|string +
+              ansible_distribution_major_version|lower|string
+            ),
+            default=[]
+          ) -}}
+      {%- else -%}
+        {{- lookup(
+              'vars',
+              (
+                '__uwsgi_emperor_config_path_' +
+                ansible_distribution|lower|string
+              ),
+              default=[]
+            ) -}}
+      {%- endif -%}
+
+- name: Determine the approrpriate default emperor config
+  set_fact:
+    _uwsgi_emperor_config: >-
+      {%- if uwsgi_emperor_config is not none -%}
+      {{ uwsgi_emperor_config }}
+      {%- elif (
+            lookup(
+              'vars',
+              (
+                '__uwsgi_emperor_config_' +
+                ansible_distribution|lower|string +
+                ansible_distribution_major_version|lower|string
+              ),
+              default=[]
+            ) | length
+          ) > 0 -%}
+      {{- lookup(
+            'vars',
+            (
+              '__uwsgi_emperor_config_' +
+              ansible_distribution|lower|string +
+              ansible_distribution_major_version|lower|string
+            ),
+            default=[]
+          ) -}}
+      {%- else -%}
+        {{- lookup(
+              'vars',
+              (
+                '__uwsgi_emperor_config_' +
+                ansible_distribution|lower|string
+              ),
+              default=[]
+            ) -}}
+      {%- endif -%}
+
+- name: Determine the approrpriate default emperor config
+  set_fact:
+    _uwsgi_bin_path: >-
+      {%- if uwsgi_bin_path is not none -%}
+      {{ uwsgi_bin_path }}
+      {%- elif (
+            lookup(
+              'vars',
+              (
+                '__uwsgi_bin_path_' +
+                ansible_distribution|lower|string +
+                ansible_distribution_major_version|lower|string
+              ),
+              default=[]
+            ) | length
+          ) > 0 -%}
+      {{- lookup(
+            'vars',
+            (
+              '__uwsgi_bin_path_' +
+              ansible_distribution|lower|string +
+              ansible_distribution_major_version|lower|string
+            ),
+            default=[]
+          ) -}}
+      {%- else -%}
+        {{- lookup(
+              'vars',
+              (
+                '__uwsgi_bin_path_' +
+                ansible_distribution|lower|string
+              ),
+              default=[]
+            ) -}}
+      {%- endif -%}
+
+
+- name: Look for an existing vassal path
+  stat:
+    path: "{{ _uwsgi_emperor_config_path | dirname }}"
+  changed_when: false
+  register: _emperor_config_path_st

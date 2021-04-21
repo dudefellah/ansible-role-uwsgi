@@ -1,0 +1,28 @@
+---
+- name: Look for the existing vassal path
+  stat:
+    path: "{{ path | dirname }}"
+  changed_when: false
+  register: _vassal_path_st
+
+- name: Create uwsgi vassal path, if needed
+  file:
+    path: "{{ path | dirname }}"
+    state: directory
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "0750"
+  when:
+    - "not _vassal_path_st.stat.exists"
+
+- name: Deposit vassal config file
+  template:
+    src: "uwsgi.ini.j2"
+    dest: "{{ path }}"
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "0640"
+  notify:
+    - reload uwsgi
+  vars:
+    uwsgi_config: "{{ config }}"

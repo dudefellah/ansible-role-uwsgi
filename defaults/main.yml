@@ -1,0 +1,116 @@
+---
+# defaults file for ansible-role-uwsgi
+# Install via "package" (the package module) or "pip" (the pip module)
+uwsgi_install_method: package
+
+# The user uwsgi will use to run the emperor.
+# Note: users and groups won't be installed by this role. Any system accounts
+# that are required should be created before using this role.
+uwsgi_owner: uwsgi
+
+# The group uwsgi will use to run the emperor
+uwsgi_group: uwsgi
+
+# Location of the emperor systemd service to deposit. Only applies if the system
+# supports systemd. You can set this value to empty or null to prevent any
+# service from being added.
+uwsgi_emperor_systemd_service_path: "/etc/systemd/system/uwsgi.service"
+
+# Use a special value to track the location of the emperor's pidfile
+# which will be added into the emperor's .ini file to make managing the service
+# easier
+uwsgi_emperor_pidfile_path: /run/uwsgi/uwsgi-emperor.pid
+
+# Value to include as RuntimeDirectory for the systemd service
+uwsgi_service_runtime_directory: uwsgi
+
+# Set the name for uwsgi service
+uwsgi_service_name: uwsgi
+
+# State to set for the uwsgi service once the role is done
+uwsgi_service_state: started
+
+# Enable/disable the service on boot
+uwsgi_service_enabled: true
+
+# The state to set when a configuration has changed in this role
+uwsgi_service_reload_state: restarted
+
+# Specifies the path to the uwsgi binary if no virtualenv is being used.
+# This will be placed in the systemd .service file since it wants to have
+# an absolute path for this value.
+#
+# This will be automatically determine if set to null, and virtualenv is
+# unset.
+uwsgi_bin_path: null
+
+# Here we can specify the packages that will be installed for this
+# role. If left null, the required packages will be determined based on your
+# platform. If set to an empty list, no packages will be installed and if
+# set to a list with elements in it, those elements will be used as the
+# installation packages.
+uwsgi_packages: null
+
+# The list of pip packages to install when uwsgi_install_method is set to "pip".
+# The default list isn't determined based on platform like the `uwsgi_packages`
+# list, since that wouldn't make sense in this context. A value of `[]` or `null`
+# will just prevent any pip packages from being installed, even if the
+# `uwsgi_install_method` is set to "pip"
+uwsgi_pip_packages:
+  - uwsgi
+
+# Pip executable to use when installing via pip
+uwsgi_pip_executable: null
+
+# Virtualenv location when installing via pip
+uwsgi_pip_virtualenv: null
+
+# Alternate virtualenv command to use when installing via pip
+uwsgi_pip_virtualenv_command: virtualenv
+
+# When true, pip will inherit via from the global site packages directory
+uwsgi_pip_virtualenv_site_packages: false
+
+# Extra args to pass to pip when installing via pip
+uwsgi_pip_extra_args: null
+
+# Path to uwsgi vassal .ini files. Default is to determine the appropriate
+# location based on your platform. Set to specific value to override this.
+uwsgi_vassal_path: null
+
+# Path to the primary uwsgi .ini file. Default is to determine the location
+# based on the platform. Set to something specific to use that instead.
+uwsgi_emperor_config_path: null
+
+# Default emperor configuration
+uwsgi_emperor_config:
+  uwsgi:
+    autoload: true
+    master: true
+    workers: 2
+    no-orphans: true
+    log-date: true
+    uid: "{{ uwsgi_owner }}"
+    gid: "{{ uwsgi_group }}"
+    emperor: "{{ _uwsgi_vassal_path }}"
+
+# When set to true, all configs not mentioned in `uwsgi_vassal_configs` will
+# be removed
+uwsgi_vassal_clean: false
+
+# Uwsgi vassal configurations as a list of files. Each file is given a 'path'
+# with the 'path' element which will determine the filename under the
+# `uwsgi_vassal_path`.
+# The actual config elements are added under the `content` key.
+# Under `content` are key/value pairs to be added to the file in the form of
+# {{ key }} = {{ value }} pairs in the .ini file. This might be clearer from
+# reading templates/uwsgi.ini.j2.
+uwsgi_vassal_configs: []
+# Eg.
+#  - path: myapp.ini
+#    content:
+#      usgi:
+#        module: "wsgi:app"
+#        master: true
+#        processes: 5
+#        ...
