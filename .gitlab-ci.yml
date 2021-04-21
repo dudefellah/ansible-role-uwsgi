@@ -9,6 +9,7 @@ include:
 
 molecule:
   stage: test
+  extends: .ansible_molecule
   image: "dudefellah/ansible-molecule:3.2.3"
   script:
     - molecule test --all
